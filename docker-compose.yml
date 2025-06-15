@@ -2,17 +2,21 @@ version: '3.6'
 services:
   keycloakdb:
     image: postgres:15
+    container_name: keycloakdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: keycloak
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: password
+      KC_FEATURES: preview,token-exchange,admin-fine-grained-authz
     networks:
       - app-network
 
   keycloak_web:
-    image: quay.io/keycloak/keycloak:26.2.5
+    build:
+      context: ../hotel-keycloak
+#    image: quay.io/keycloak/keycloak:26.2.5
     container_name: keycloak_web
     environment:
       KC_DB: postgres
@@ -30,7 +34,7 @@ services:
       KC_HEALTH_ENABLED: true
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-    command: start-dev
+    command: start-dev --import-realm
     depends_on:
       - keycloakdb
     ports:
