@@ -1,4 +1,3 @@
-version: '3.6'
 services:
   keycloakdb:
     image: postgres:15
@@ -9,14 +8,14 @@ services:
       POSTGRES_DB: keycloak
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: password
-      KC_FEATURES: preview,token-exchange,admin-fine-grained-authz
+    ports:
+      - 5000:5432
     networks:
       - app-network
 
   keycloak_web:
     build:
       context: ../hotel-keycloak
-#    image: quay.io/keycloak/keycloak:26.2.5
     container_name: keycloak_web
     environment:
       KC_DB: postgres
@@ -34,6 +33,7 @@ services:
       KC_HEALTH_ENABLED: true
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_FEATURES: preview,token-exchange,admin-fine-grained-authz
     command: start-dev --import-realm
     depends_on:
       - keycloakdb
@@ -42,8 +42,41 @@ services:
     networks:
       - app-network
 
+  hotel_managementdb:
+    image: postgres:15
+    container_name: hotel_managementdb
+    volumes:
+      - hotel_management_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: hotel
+      POSTGRES_USER: hotel
+      POSTGRES_PASSWORD: password
+    ports:
+      - 5001:5432
+    networks:
+      - app-network
+
+  minio:
+    image: quay.io/minio/minio
+    container_name: minio
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio_data:/data
+    ports:
+      - 9000:9000
+      - 9001:9001
+
 volumes:
   postgres_data:
+    driver: local
+  hotel_management_data:
+    driver: local
+  minio_data:
+    driver: local
+
 networks:
   app-network:
     driver: bridge
